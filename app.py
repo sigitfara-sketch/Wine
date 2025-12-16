@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
-
+import numpy as np
 
 st.set_page_config(
     page_title="Wine Quality Prediction",
@@ -98,3 +97,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+

@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import numpy as np
 import os
 
 # ===============================
@@ -19,6 +18,7 @@ st.set_page_config(
 st.title("🍷 Prediksi Kualitas Anggur Merah")
 st.markdown("""
 Aplikasi ini menggunakan **Random Forest Classifier**
+(dalam bentuk Pipeline: Scaler + Model)
 untuk memprediksi kualitas anggur merah:
 - **1 = Kualitas Tinggi (≥ 7)**
 - **0 = Kualitas Rendah (< 7)**
@@ -26,22 +26,18 @@ untuk memprediksi kualitas anggur merah:
 st.divider()
 
 # ===============================
-# LOAD MODEL & SCALER (AMAN UNTUK DEPLOY)
+# LOAD PIPELINE (SATU FILE)
 # ===============================
-MODEL_PATH = "wine_quality_model.joblib"
-SCALER_PATH = "wine_quality_scaler.joblib"
+PIPELINE_PATH = "wine_quality_pipeline.joblib"
 
 @st.cache_resource
-def load_model():
-    if not os.path.exists(MODEL_PATH) or not os.path.exists(SCALER_PATH):
-        st.error("❌ File model (.joblib) tidak ditemukan di repository GitHub.")
+def load_pipeline():
+    if not os.path.exists(PIPELINE_PATH):
+        st.error("❌ File `wine_quality_pipeline.joblib` tidak ditemukan di repository GitHub.")
         st.stop()
+    return joblib.load(PIPELINE_PATH)
 
-    model = joblib.load(MODEL_PATH)
-    scaler = joblib.load(SCALER_PATH)
-    return model, scaler
-
-model, scaler = load_model()
+pipeline = load_pipeline()
 
 feature_names = [
     'fixed acidity', 'volatile acidity', 'citric acid',
@@ -90,10 +86,8 @@ if st.button("🔬 Prediksi Kualitas Anggur"):
     input_df = pd.DataFrame([input_data])
     input_df = input_df[feature_names]
 
-    input_scaled = scaler.transform(input_df)
-
-    prediction = model.predict(input_scaled)[0]
-    proba = model.predict_proba(input_scaled)[0]
+    prediction = pipeline.predict(input_df)[0]
+    proba = pipeline.predict_proba(input_df)[0]
 
     st.subheader("🎯 Hasil Prediksi")
 
@@ -109,13 +103,15 @@ if st.button("🔬 Prediksi Kualitas Anggur"):
     """)
 
 # ===============================
-# FEATURE IMPORTANCE (OPSIONAL)
+# FEATURE IMPORTANCE
 # ===============================
 st.divider()
 st.header("📊 Feature Importance")
 
 try:
     import plotly.express as px
+
+    model = pipeline.named_steps["model"]
 
     importance_df = pd.DataFrame({
         "Feature": feature_names,
@@ -133,6 +129,6 @@ try:
     st.plotly_chart(fig, use_container_width=True)
 
 except Exception:
-    st.warning("Plotly tidak tersedia. Tambahkan `plotly` ke requirements.txt jika ingin grafik.")
+    st.warning("Plotly belum terpasang. Tambahkan `plotly` ke requirements.txt jika ingin grafik.")
 
-st.caption("© Streamlit • Random Forest • Python 3.10")
+st.caption("© Streamlit • Random Forest Pipeline • Python 3.10")
